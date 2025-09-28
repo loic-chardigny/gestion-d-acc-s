@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API IPX800V5</title>
+</head>
+<body>
+
+<h1>Test de connexion à l'IPX800 V5</h1>
+<button onclick="testConnection()">Tester la connexion</button>
+<div id="result"></div>
+
+<script>
+    function testConnection() {
+        const apiUrl = 'http://10.171.20.120:81/api/xdevices.json';
+        const apiKey = 'meN5cslM0uoOaHN';
+
+        // Faire la requête GET avec fetch
+        fetch(`${apiUrl}?key=${apiKey}&action=get`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur lors de la connexion à l\'API');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Afficher les données retournées par l'API
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            })
+            .catch(error => {
+                // Afficher l'erreur si la requête échoue
+                document.getElementById('result').innerHTML = 'Erreur : ' + error.message;
+            });
+    }
+</script>
+
+</body>
+</html>

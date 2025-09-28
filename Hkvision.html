@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flux Caméra HLS</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        video {
+            width: 100%;
+            background: #000;
+            border-radius: 4px;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .loading {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .playing {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Flux Caméra en Direct</h1>
+        <video id="video" controls autoplay></video>
+        <div id="status" class="status loading">Chargement du flux...</div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.getElementById('video');
+            const statusElement = document.getElementById('status');
+            
+            // Chemin vers votre fichier HLS (adapté pour un serveur web local)
+            const hlsUrl = 'http://localhost:8000/stream.m3u8'; // À modifier selon votre configuration
+            
+            // Alternative si vous ouvrez directement le fichier HTML
+            // const hlsUrl = 'file:///C:/ffmpeg/ffmpeg/bin/stream.m3u8'; // Ne fonctionne que dans certains cas
+            
+            if (Hls.isSupported()) {
+                const hls = new Hls({
+                    maxBufferLength: 15,
+                    maxMaxBufferLength: 30,
+                    enableWorker: true
+                });
+                
+                hls.loadSource(hlsUrl);
+                hls.attachMedia(video);
+                
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    statusElement.textContent = "Flux connecté - Lecture en cours";
+                    statusElement.className = "status playing";
+                    video.play().catch(e => {
+                        statusElement.textContent = "Erreur: " + e.message;
+                        statusElement.className = "status error";
+                    });
+                });
+                
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    if (data.fatal) {
+                        statusElement.textContent = "Erreur: " + data.type;
+                        statusElement.className = "status error";
+                        
+                        switch(data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                setTimeout(() => hls.loadSource(hlsUrl), 3000);
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                hls.destroy();
+                                break;
+                        }
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // Pour Safari
+                video.src = hlsUrl;
+                video.addEventListener('loadedmetadata', () => {
+                    video.play();
+                    statusElement.textContent = "Lecture en cours (Safari)";
+                    statusElement.className = "status playing";
+                });
+            } else {
+                statusElement.textContent = "Votre navigateur ne supporte pas la lecture HLS";
+                statusElement.className = "status error";
+            }
+        });
+    </script>
+</body>
+</html>
